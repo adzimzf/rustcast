@@ -1,0 +1,53 @@
+name: Build PR Version
+
+# Builds an unsigned universal RustCast.app for every pull request so the
+# changes can be downloaded and tried out before merging.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-macos:
+    name: "Build macOS app (unsigned)"
+    runs-on: macos-14
+    timeout-minutes: 45
+    env:
+      APP_VERSION: pr-${{ github.event.pull_request.number || github.run_number }}-${{ github.sha }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build macOS app (universal)
+        run: bash scripts/build-macos.sh
+
+      # Without a Developer ID certificate, an ad-hoc signature is still needed
+      # for the binary to launch on Apple Silicon
+      - name: Ad-hoc sign app
+        run: codesign --force --deep --sign - "$APP_BUNDLE_PATH"
+
+      - name: Zip app bundle
+        run: |
+          mkdir -p artifacts
+          ditto -c -k --keepParent "$APP_BUNDLE_PATH" artifacts/RustCast-pr-build.zip
+
+      - name: Upload app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustcast-pr-${{ github.event.pull_request.number || github.run_number }}
+          path: artifacts/RustCast-pr-build.zip
+          retention-days: 7
