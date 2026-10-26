@@ -70,7 +70,7 @@ pub fn rustcast_text_input_style(theme: &ConfigTheme) -> text_input::Style {
             radius: Radius::new(10.).bottom(0.),
         },
         icon: theme.text_color(0.),
-        placeholder: theme.text_color(0.2),
+        placeholder: theme.text_color(0.45),
         value: theme.text_color(0.9),
         selection: theme.text_color(0.2),
     }
@@ -160,11 +160,15 @@ pub fn favourite_button_style(
     theme: &ConfigTheme,
     status: button::Status,
     is_favourite: bool,
+    focused: bool,
 ) -> button::Style {
+    // Only show the heart on favourites and on the focused row, so the list stays clean
     let (base, pressed, hovered) = if is_favourite {
         (1.0, 0.8, 0.9)
+    } else if focused {
+        (0.3, 1.0, 0.5)
     } else {
-        (0.1, 1.0, 0.5)
+        (0.0, 1.0, 0.5)
     };
 
     let text_color = match status {
@@ -245,6 +249,37 @@ pub fn result_row_container_style(tile: &ConfigTheme, focused: bool) -> containe
             radius: Radius::new(0.0),
         },
         text_color: Some(tile.text_color(1.0)),
+        ..Default::default()
+    }
+}
+
+/// The rounded highlight drawn behind the focused result row
+pub fn result_row_highlight_style(tile: &ConfigTheme, focused: bool) -> container::Style {
+    if !focused {
+        return container::Style::default();
+    }
+    container::Style {
+        background: Some(Background::Color(tile.text_color(0.08))),
+        border: Border {
+            color: Color::TRANSPARENT,
+            width: 0.,
+            radius: Radius::new(10.0),
+        },
+        text_color: Some(tile.text_color(1.0)),
+        ..Default::default()
+    }
+}
+
+/// A small keyboard key hint, like the "↵" shown in the footer
+pub fn keycap_style(theme: &ConfigTheme) -> container::Style {
+    container::Style {
+        background: Some(Background::Color(theme.text_color(0.08))),
+        border: Border {
+            color: theme.text_color(0.12),
+            width: 0.5,
+            radius: Radius::new(5.0),
+        },
+        text_color: Some(theme.text_color(0.7)),
         ..Default::default()
     }
 }

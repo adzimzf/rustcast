@@ -7,7 +7,7 @@ use std::fs;
 use iced::border::Radius;
 use iced::widget::scrollable::{Anchor, Direction, Scrollbar};
 use iced::widget::text::LineHeight;
-use iced::widget::{Column, Row, Scrollable, Text, container, space};
+use iced::widget::{Column, Row, Scrollable, Text, container, rule, space};
 use iced::{Alignment, Color, Length, Vector, window};
 use iced::{Element, Task};
 use iced::{Length::Fill, widget::text_input};
@@ -24,7 +24,8 @@ use crate::config::Theme;
 use crate::debounce::Debouncer;
 use crate::platform::macos::events::Event;
 use crate::styles::{
-    contents_style, glass_border, glass_surface, results_scrollbar_style, rustcast_text_input_style,
+    contents_style, glass_border, glass_surface, keycap_style, results_scrollbar_style,
+    rustcast_text_input_style,
 };
 use crate::{app::pages::clipboard::clipboard_view, platform::get_installed_apps};
 use crate::{
@@ -141,7 +142,8 @@ pub fn view(tile: &Tile, wid: window::Id) -> Element<'_, Message> {
             .on_submit(Message::OpenFocused)
             .id("query")
             .width(Fill)
-            .line_height(LineHeight::Relative(1.75))
+            .size(20)
+            .line_height(LineHeight::Relative(1.4))
             .style(move |_, _| rustcast_text_input_style(&tile.config.theme))
             .padding(20);
 
@@ -221,7 +223,9 @@ pub fn view(tile: &Tile, wid: window::Id) -> Element<'_, Message> {
         let contents = container(
             Column::new()
                 .push(title_input)
+                .push(separator(&tile.config.theme))
                 .push(scrollable)
+                .push(separator(&tile.config.theme))
                 .push(footer(
                     tile.config.theme.clone(),
                     tile.current_mode.clone(),
@@ -249,7 +253,22 @@ pub fn view(tile: &Tile, wid: window::Id) -> Element<'_, Message> {
     }
 }
 
+/// A thin line used to split the search bar, results and footer
+fn separator(theme: &Theme) -> Element<'static, Message> {
+    let color = theme.text_color(0.08);
+    rule::horizontal(1)
+        .style(move |_| rule::Style {
+            color,
+            radius: Radius::new(0),
+            fill_mode: rule::FillMode::Full,
+            snap: true,
+        })
+        .into()
+}
+
 /// The footer at the bottom displaying the mode and results found, and its styling
+///
+/// Laid out like Raycast's action bar: status on the left, key hints on the right
 fn footer(theme: Theme, current_mode: String, text: String) -> Element<'static, Message> {
     let radius = 15.0;
 
@@ -258,29 +277,31 @@ fn footer(theme: Theme, current_mode: String, text: String) -> Element<'static, 
         current_mode.split_at(1).0.to_uppercase(),
         current_mode.split_at(1).1
     );
+
+    let hint_text = |label: String| {
+        Text::new(label)
+            .size(12)
+            .color(theme.text_color(0.6))
+            .font(theme.font())
+    };
+
+    let keycap_theme = theme.clone();
+    let open_hint = Row::new()
+        .push(hint_text("Open".to_string()))
+        .push(
+            container(Text::new("↵").size(11).font(theme.font()))
+                .padding([1, 6])
+                .style(move |_| keycap_style(&keycap_theme)),
+        )
+        .spacing(6)
+        .align_y(Alignment::Center);
+
     container(
         Row::new()
-            .push(
-                Text::new(text)
-                    .size(12)
-                    .height(30)
-                    .color(theme.text_color(0.7))
-                    .font(theme.font())
-                    .align_y(Alignment::Center)
-                    .align_x(Alignment::Center),
-            )
-            .push(
-                Text::new(current_mode)
-                    .size(12)
-                    .height(30)
-                    .color(theme.text_color(0.7))
-                    .font(theme.font())
-                    .width(Fill)
-                    .align_y(Alignment::Center)
-                    .align_x(Alignment::End),
-            )
+            .push(hint_text(format!("{text}  ·  {current_mode}")).width(Fill))
+            .push(open_hint)
             .align_y(Alignment::Center)
-            .padding(4)
+            .padding([0, 10])
             .width(Fill)
             .height(Fill),
     )

@@ -8,7 +8,10 @@ use iced::{
 use crate::{
     app::Message,
     commands::Function,
-    styles::{image_icon, result_button_style, result_row_container_style, text_icon, url_icon},
+    styles::{
+        image_icon, result_button_style, result_row_container_style, result_row_highlight_style,
+        text_icon, url_icon,
+    },
 };
 
 /// The kinds of clipboard content that rustcast can handle and their contents
@@ -69,8 +72,9 @@ impl ClipBoardContentType {
 
         let theme_1 = theme.clone();
         let theme_2 = theme.clone();
+        let theme_3 = theme.clone();
 
-        container(
+        let highlight = container(
             Button::new(
                 row![
                     title_icon_fn().size(22),
@@ -89,8 +93,13 @@ impl ClipBoardContentType {
                 self.clone(),
             ))),
         )
-        .style(move |_| result_row_container_style(&theme_2, selected))
-        .into()
+        .style(move |_| result_row_highlight_style(&theme_3, selected))
+        .padding([0, 4]);
+
+        container(highlight)
+            .style(move |_| result_row_container_style(&theme_2, false))
+            .padding([0, 6])
+            .into()
     }
 }
 
