@@ -22,7 +22,8 @@ use crate::{
     commands::Function,
     styles::{
         clipboard_icon, emoji_icon, favourite_button_style, filesearch_icon, info_icon, quit_icon,
-        refresh_icon, result_button_style, result_row_container_style, settings_icon,
+        refresh_icon, result_button_style, result_row_container_style, result_row_highlight_style,
+        settings_icon,
     },
     utils::icns_data_to_handle,
 };
@@ -281,7 +282,7 @@ impl App {
         // Title + subtitle (Raycast style)
         let text_block = Text::new(self.display_name)
             .font(theme.font())
-            .size(16)
+            .size(15)
             .wrapping(Wrapping::None)
             .color(theme.text_color(1.0));
         let subtitle_block = container(
@@ -290,7 +291,7 @@ impl App {
                 .size(13)
                 .width(Length::Fill)
                 .align_x(Alignment::End)
-                .color(theme.text_color(0.55)),
+                .color(theme.text_color(0.5)),
         );
 
         let mut row = Row::new()
@@ -313,7 +314,9 @@ impl App {
             Button::new(Text::new("♥️").width(Length::Fill).align_x(Alignment::End))
                 .on_press_with(move || Message::ToggleFavouriteApp(name.clone()))
                 .width(20)
-                .style(move |_, status| favourite_button_style(&theme_clone, status, is_favourite)),
+                .style(move |_, status| {
+                    favourite_button_style(&theme_clone, status, is_favourite, focused)
+                }),
         );
 
         let msg = on_press.or(match self.open_command.clone() {
@@ -331,10 +334,16 @@ impl App {
             .padding(0)
             .height(40);
 
-        container(content)
+        let highlight_theme = theme.clone();
+        let highlight = container(content)
+            .style(move |_| result_row_highlight_style(&highlight_theme, focused))
+            .padding([8, 10])
+            .width(Fill);
+
+        container(highlight)
             .id(format!("result-{}", id_num))
-            .style(move |_| result_row_container_style(&theme, focused))
-            .padding(8)
+            .style(move |_| result_row_container_style(&theme, false))
+            .padding([0, 8])
             .width(Fill)
             .into()
     }
